@@ -1,4 +1,4 @@
-import requests
+import requests 
 import datetime
 import time
 import os
@@ -87,19 +87,39 @@ def extract_price_cap_metrics(prices, market_caps):
         'market_caps': market_caps
     }
 
-# Function to save results to CSV
+# UPDATED FUNCTION: Save results to a single consolidated CSV
 def save_results_to_csv(results, coin_id, start_date, end_date):
-    """Save results to CSV for general metrics."""
+    """Save results to a single CSV without duplicating coins or altering existing data."""
     os.makedirs('result_csv', exist_ok=True)
+    filename = 'result_csv/master_results.csv'
+    new_row = [coin_id, results['start_price'], results['end_price'], results['highest_price'],
+               results['lowest_price'], results['price_change'], results['start_cap'],
+               results['end_cap'], results['market_cap_change']]
 
-    with open(f'result_csv/{coin_id}_results.csv', mode='a', newline='') as file:
-        writer = csv.writer(file)
-        if file.tell() == 0:  # Write headers only if file is empty
+    # If the file doesn't exist, create it and add headers
+    if not os.path.exists(filename):
+        with open(filename, mode='w', newline='') as file:
+            writer = csv.writer(file)
             writer.writerow(['Coin Name', 'Start Price', 'End Price', 'Highest Price', 'Lowest Price',
                              'Price Change', 'Start Market Cap', 'End Market Cap', 'Market Cap Change'])
-        writer.writerow([coin_id, results['start_price'], results['end_price'], results['highest_price'],
-                         results['lowest_price'], results['price_change'], results['start_cap'],
-                         results['end_cap'], results['market_cap_change']])
+            writer.writerow(new_row)
+    else:
+        # Read existing data to check for duplicates
+        with open(filename, mode='r', newline='') as file:
+            reader = csv.reader(file)
+            next(reader)  # Skip header
+            existing_rows = list(reader)
+
+        # If coin_id already exists, skip
+        existing_coins = {row[0] for row in existing_rows}
+        if coin_id in existing_coins:
+            print(f"Skipping {coin_id} — already exists in master CSV.")
+            return
+
+        # Append new row if coin is not in existing ones
+        with open(filename, mode='a', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(new_row)
 
 # Function to save histogram image (candlestick chart)
 def save_histogram_image(prices, market_caps, coin_id, start_date, end_date):
@@ -181,6 +201,10 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
+
 
 
 
